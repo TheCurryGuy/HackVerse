@@ -5,3 +5,8 @@ pandas
 joblib
 scikit-learn
 python-multipart
+
+requests
+groq
+python-dotenv
+nltk

@@ -16,6 +16,8 @@ import tempfile
 from machine_learning.model1.part1 import evaluate_candidate
 from machine_learning.model1.part2 import form_teams_from_csv
 
+from machine_learning.model5.github_fetcher import fetch_repo_data
+from machine_learning.model5.explainer import generate_pitches
 
 app = FastAPI(title="Machine Learning Models API")
 
@@ -144,5 +146,32 @@ def predict_score(team_input: TeamInput):
             "name": team_input.team_name,
             "score": predicted_score
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# --- Model 5 Endpoint (AI Project Explanation) ---
+class ExplainRequest(BaseModel):
+    github_url: str
+    team_id:    str
+
+class ExplainResponse(BaseModel):
+    one_liner:        str
+    tech_pitch:       str
+    full_explanation: str
+    tech_stack_used:  list[str]
+    contributors:     list[str]
+
+@app.post("/model5/explain", response_model=ExplainResponse)
+async def explain_project(req: ExplainRequest):
+    try:
+        repo_data = fetch_repo_data(req.github_url)
+        pitches   = generate_pitches(repo_data)
+        return ExplainResponse(
+            one_liner        = pitches["one_liner"],
+            tech_pitch       = pitches["tech_pitch"],
+            full_explanation = pitches["full_explanation"],
+            tech_stack_used  = repo_data["tech_stack"],
+            contributors     = [f"{c['username']}: {c['contributions']}" for c in repo_data["contributors"]]
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
